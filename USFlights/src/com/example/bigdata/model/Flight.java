@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class FlightRecord implements Serializable {
+public class Flight implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -17,10 +17,10 @@ public class FlightRecord implements Serializable {
     private String destAirport;
     private String scheduledDepartureTime;
     private int scheduledDepartureDayOfWeek;
-    private int scheduledFlightTime;
+    private String scheduledFlightTime;
     private String scheduledArrivalTime;
     private String departureTime;
-    private int taxiOut;
+    private String taxiOut;
     private String distance;
     private String taxiIn;
     private String arrivalTime;
@@ -36,12 +36,18 @@ public class FlightRecord implements Serializable {
     private String orderColumn;
     private String infoType;
 
-    private FlightRecord(String airline, String flightNumber, String tailNumber, String startAirport, String destAirport,
-                         String scheduledDepartureTime, int scheduledDepartureDayOfWeek, int scheduledFlightTime,
-                         String scheduledArrivalTime, String departureTime, int taxiOut, String distance,
-                         String taxiIn, String arrivalTime, String diverted, String cancelled,
-                         String cancellationReason, String airSystemDelay, String securityDelay, String airlineDelay,
-                         String lateAircraftDelay, String weatherDelay, String cancellationTime, String orderColumn, String infoType) {
+    private String currentAirport;
+
+    public Integer get0() {
+        return 0;
+    }
+
+    private Flight(String airline, String flightNumber, String tailNumber, String startAirport, String destAirport,
+                   String scheduledDepartureTime, int scheduledDepartureDayOfWeek, String scheduledFlightTime,
+                   String scheduledArrivalTime, String departureTime, String taxiOut, String distance,
+                   String taxiIn, String arrivalTime, String diverted, String cancelled,
+                   String cancellationReason, String airSystemDelay, String securityDelay, String airlineDelay,
+                   String lateAircraftDelay, String weatherDelay, String cancellationTime, String orderColumn, String infoType) {
         this.airline = airline;
         this.flightNumber = flightNumber;
         this.tailNumber = tailNumber;
@@ -67,12 +73,15 @@ public class FlightRecord implements Serializable {
         this.cancellationTime = cancellationTime;
         this.orderColumn = orderColumn;
         this.infoType = infoType;
+
+        this.currentAirport = infoType == "A" ? this.destAirport : this.startAirport;
     }
 
-    public static FlightRecord parseFromCsvLine(String csvLine) {
+    public static Flight parseFromCsvLine(String csvLine) {
         String[] fields = csvLine.split(",");
 
         if (fields.length != 25) {
+            System.out.println("Error parsing CSV line: " + csvLine);
             throw new RuntimeException("Error parsing CSV line: " + csvLine);
         }
 
@@ -83,10 +92,10 @@ public class FlightRecord implements Serializable {
         String destAirport = fields[4];
         String scheduledDepartureTime = fields[5];
         int scheduledDepartureDayOfWeek = Integer.parseInt(fields[6]);
-        int scheduledFlightTime = Integer.parseInt(fields[7]);
+        String scheduledFlightTime = fields[7];
         String scheduledArrivalTime = fields[8];
         String departureTime = fields[9];
-        int taxiOut = fields[10].isEmpty() ? 0 : Integer.parseInt(fields[10]);
+        String taxiOut = fields[10];
         String distance = fields[11];
         String taxiIn = fields[12];
         String arrivalTime = fields[13];
@@ -102,7 +111,7 @@ public class FlightRecord implements Serializable {
         String orderColumn = fields[23];
         String infoType = fields[24];
 
-        return new FlightRecord(airline, flightNumber, tailNumber, startAirport, destAirport,
+        return new Flight(airline, flightNumber, tailNumber, startAirport, destAirport,
                 scheduledDepartureTime, scheduledDepartureDayOfWeek, scheduledFlightTime,
                 scheduledArrivalTime, departureTime, taxiOut, distance, taxiIn, arrivalTime,
                 diverted, cancelled, cancellationReason, airSystemDelay, securityDelay,
@@ -113,7 +122,7 @@ public class FlightRecord implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%s,%s,%s,%s,%s,%s,%d,%d,%s,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
+        return String.format("%s,%s,%s,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
                 airline, flightNumber, tailNumber, startAirport, destAirport, scheduledDepartureTime,
                 scheduledDepartureDayOfWeek, scheduledFlightTime, scheduledArrivalTime, departureTime,
                 taxiOut, distance, taxiIn, arrivalTime, diverted, cancelled, cancellationReason, airSystemDelay,
@@ -187,11 +196,11 @@ public class FlightRecord implements Serializable {
         this.scheduledDepartureDayOfWeek = scheduledDepartureDayOfWeek;
     }
 
-    public int getScheduledFlightTime() {
+    public String getScheduledFlightTime() {
         return scheduledFlightTime;
     }
 
-    public void setScheduledFlightTime(int scheduledFlightTime) {
+    public void setScheduledFlightTime(String scheduledFlightTime) {
         this.scheduledFlightTime = scheduledFlightTime;
     }
 
@@ -211,11 +220,11 @@ public class FlightRecord implements Serializable {
         this.departureTime = departureTime;
     }
 
-    public int getTaxiOut() {
+    public String getTaxiOut() {
         return taxiOut;
     }
 
-    public void setTaxiOut(int taxiOut) {
+    public void setTaxiOut(String taxiOut) {
         this.taxiOut = taxiOut;
     }
 
@@ -329,5 +338,13 @@ public class FlightRecord implements Serializable {
 
     public void setInfoType(String infoType) {
         this.infoType = infoType;
+    }
+
+    public String getCurrentAirport() {
+        return currentAirport;
+    }
+
+    public void setCurrentAirport(String currentAirport) {
+        this.currentAirport = currentAirport;
     }
 }
