@@ -45,11 +45,11 @@ public class Connectors {
                 .build();
     }
 
-    public static SinkFunction<String> getPrintSink() {
-        return new SinkFunction<String>() {
+    public static <T> SinkFunction<T> getPrintSink() {
+        return new SinkFunction<T>() {
             @Override
-            public void invoke(String value, Context context) {
-                System.out.println(value);
+            public void invoke(T value, Context context) {
+                System.out.println(value.toString());
             }
         };
     }

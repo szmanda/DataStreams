@@ -1,7 +1,5 @@
-package com.example.bigdata;
-package com.example.bigdata;
+package com.example.bigdata.watermarks;
 
-import com.example.bigdata.model.Airport;
 import com.example.bigdata.model.CombinedDelay;
 import org.apache.flink.api.common.eventtime.*;
 import java.text.SimpleDateFormat;
@@ -37,7 +35,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
         public long extractTimestamp(CombinedDelay delay, long previousElementTimestamp) {
             try
             {
-                long timestamp = getTimestamp(delay.getDate());
+                long timestamp = System.currentTimeMillis();
                 currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
                 return timestamp;
             }
@@ -51,7 +49,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
     private class MyWatermarkGenerator implements WatermarkGenerator<CombinedDelay> {
         @Override
         public void onEvent(CombinedDelay delay, long eventTimestamp, WatermarkOutput output) {
-            currentMaxTimestamp = Math.max(getTimestamp(delay.getDate()), currentMaxTimestamp);
+            currentMaxTimestamp = Math.max(System.currentTimeMillis(), currentMaxTimestamp);
         }
 
         @Override
