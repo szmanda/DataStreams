@@ -29,7 +29,7 @@ public class TestProducer {
                 stream.forEach(line ->
                         {
                             if (line.startsWith("airline,")) return;
-                            try { TimeUnit.SECONDS.sleep(1); } catch (InterruptedException e) {}
+                            try { TimeUnit.MILLISECONDS.sleep(300); } catch (InterruptedException e) {}
                             System.out.println(line);
                             producer.send(
                                     new ProducerRecord<>(properties.get("kafka.topic"), String.valueOf(line.hashCode()), line)

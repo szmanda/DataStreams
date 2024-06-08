@@ -1,6 +1,6 @@
 ## Kafka, Stream Processing - US Flights (flink)
 
-```dtd 
+```
                           ┌─────────────────┐     ┌─────────────────────┐  
                           │ Airports        │     │ Flink               │  
                           │ CSV source      ├─────►                     │  

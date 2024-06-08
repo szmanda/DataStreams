@@ -1,6 +1,8 @@
 package com.example.bigdata.model;
 
-public class Airport {
+import java.io.Serializable;
+
+public class Airport implements Serializable {
     private Integer airportId;
     private String name;
     private String city;

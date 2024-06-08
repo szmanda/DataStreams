@@ -21,7 +21,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
 
     private long getTimestamp(String s) {
         try {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date date = format.parse(s);
             return date.getTime();
         } catch (Exception e) {
@@ -35,8 +35,10 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
         public long extractTimestamp(CombinedDelay delay, long previousElementTimestamp) {
             try
             {
-                long timestamp = System.currentTimeMillis();
-                currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
+//                long timestamp = System.currentTimeMillis();
+                long timestamp = delay.getUtcDate().getTime();
+                System.out.println(new Date(timestamp));
+//                currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
                 return timestamp;
             }
             catch(Exception ex)
@@ -49,7 +51,18 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
     private class MyWatermarkGenerator implements WatermarkGenerator<CombinedDelay> {
         @Override
         public void onEvent(CombinedDelay delay, long eventTimestamp, WatermarkOutput output) {
-            currentMaxTimestamp = Math.max(System.currentTimeMillis(), currentMaxTimestamp);
+            System.out.println(delay.getUtcDate() +" <?> "+ new Date(currentMaxTimestamp));
+            if (delay.getUtcDate().getTime() < currentMaxTimestamp) return;
+            currentMaxTimestamp = delay.getUtcDate().getTime();
+
+            Date date = new Date(currentMaxTimestamp);
+            date.setHours(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            long start = date.getTime();
+            long size = 1000L*60*60*24;
+            System.out.println("Emmiting a watermark: "+new Date(currentMaxTimestamp)+ ", inside a window: "+ new Date(start) +" -- "+ new Date(start+size));
+            output.emitWatermark(new Watermark(currentMaxTimestamp));
         }
 
         @Override

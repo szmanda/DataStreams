@@ -1,5 +1,7 @@
 package com.example.bigdata.model;
 
+import org.apache.flink.api.common.time.Time;
+
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -137,6 +139,22 @@ public class Flight implements Serializable {
             return date.getTime();
         } catch (ParseException e) {
             return -1;
+        }
+    }
+
+    public Integer getTotalDelayInteger() {
+        return parseDelay(airSystemDelay)
+                + parseDelay(securityDelay)
+                + parseDelay(airlineDelay)
+                + parseDelay(lateAircraftDelay)
+                + parseDelay(weatherDelay);
+    }
+
+    public static Integer parseDelay(String delay) {
+        try {
+            return Integer.parseInt(delay);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 
@@ -346,5 +364,24 @@ public class Flight implements Serializable {
 
     public void setCurrentAirport(String currentAirport) {
         this.currentAirport = currentAirport;
+    }
+
+    public String getRealEventTime() {
+        switch (infoType) {
+            case "A": return getArrivalTime();
+            case "D": return getDepartureTime();
+            case "C": return getCancellationTime();
+            default: return getOrderColumn();
+        }
+    }
+
+    public Date getOrderColumnDate() {
+        Date date = new Date();
+        try {
+            date = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(getOrderColumn()));
+        } catch (ParseException e) {
+            new RuntimeException("Cannot assign date of flight: "+toString());
+        }
+        return date;
     }
 }
