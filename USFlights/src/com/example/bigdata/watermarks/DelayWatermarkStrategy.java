@@ -37,7 +37,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
             {
 //                long timestamp = System.currentTimeMillis();
                 long timestamp = delay.getUtcDate().getTime();
-                System.out.println(new Date(timestamp));
+//                System.out.println(new Date(timestamp));
 //                currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
                 return timestamp;
             }
@@ -51,7 +51,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
     private class MyWatermarkGenerator implements WatermarkGenerator<CombinedDelay> {
         @Override
         public void onEvent(CombinedDelay delay, long eventTimestamp, WatermarkOutput output) {
-            System.out.println(delay.getUtcDate() +" <?> "+ new Date(currentMaxTimestamp));
+//            System.out.println(delay.getUtcDate() +" <?> "+ new Date(currentMaxTimestamp));
             if (delay.getUtcDate().getTime() < currentMaxTimestamp) return;
             currentMaxTimestamp = delay.getUtcDate().getTime();
 

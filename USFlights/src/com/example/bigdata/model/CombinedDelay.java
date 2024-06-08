@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 
-public class CombinedDelay implements Serializable, AggregateFunction<CombinedDelay, CombinedDelay, CombinedDelay> {
+public class CombinedDelay implements Serializable {
 
     private Integer delay = 0;
     private String infoType;
@@ -86,19 +86,5 @@ public class CombinedDelay implements Serializable, AggregateFunction<CombinedDe
         calendar.setTime(date);
         calendar.add(Calendar.HOUR_OF_DAY, -timeZone);
         return calendar.getTime();
-    }
-
-    @Override
-    public CombinedDelay createAccumulator() { return new CombinedDelay(); }
-    @Override
-    public CombinedDelay add(CombinedDelay newCD, CombinedDelay aggCD) { return merge(newCD, aggCD); }
-    @Override
-    public CombinedDelay getResult(CombinedDelay combinedDelay) { return combinedDelay; }
-    @Override
-    public CombinedDelay merge(CombinedDelay a, CombinedDelay b) {
-        if (b == null) b = new CombinedDelay();
-//        System.out.println("merging: "+a.toString()+"with: "+b.toString()+"\n");
-        a.setDelay(a.getDelay() + b.getDelay());
-        return a;
     }
 }

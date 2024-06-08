@@ -4,6 +4,7 @@ import com.example.bigdata.connectors.Connectors;
 import com.example.bigdata.model.Airport;
 import com.example.bigdata.model.CombinedDelay;
 import com.example.bigdata.model.Flight;
+import com.example.bigdata.transformations.DelayAggregate;
 import com.example.bigdata.transformations.FlightAirportToCombinedDelay;
 import com.example.bigdata.watermarks.AirportWatermarkStrategy;
 import com.example.bigdata.watermarks.DelayWatermarkStrategy;
@@ -19,6 +20,8 @@ import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.KeyedStream;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.co.CoMapFunction;
@@ -27,6 +30,7 @@ import org.apache.flink.streaming.api.functions.co.RichCoMapFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.util.Collector;
@@ -160,8 +164,35 @@ public class USFlightsApp {
 //        )
         ;
 
-        DataStream<CombinedDelay> combinedDelayDataStreamTS = combinedDelayStream
+        DataStream<CombinedDelay> timestamped = combinedDelayStream
                 .assignTimestampsAndWatermarks(new DelayWatermarkStrategy());
+
+        KeyedStream<CombinedDelay, String> keyed = timestamped
+                .keyBy(CombinedDelay::getState);
+
+        WindowedStream<CombinedDelay, String, TimeWindow> windowed = keyed
+            .window(new DelayWindowAssigner("C"));
+
+        DataStream<CombinedDelay> aggregated = windowed
+                .aggregate(new DelayAggregate());
+
+        timestamped.process(new ProcessFunction<CombinedDelay, Object>() {
+            @Override
+            public void processElement(CombinedDelay combinedDelay, ProcessFunction<CombinedDelay, Object>.Context context, Collector<Object> collector) throws Exception {
+                System.out.println("tsWM: " +new Date(context.timerService().currentWatermark()));
+            }
+        });
+
+
+        keyed.process(new ProcessFunction<CombinedDelay, Object>() {
+            @Override
+            public void processElement(CombinedDelay combinedDelay, ProcessFunction<CombinedDelay, Object>.Context context, Collector<Object> collector) throws Exception {
+                System.out.println("keyWM: " +new Date(context.timerService().currentWatermark()));
+            }
+        });
+
+//        DataStream<CombinedDelay> combinedDelayDataStreamTS = combinedDelayStream
+//                .assignTimestampsAndWatermarks(new DelayWatermarkStrategy());
 
 //        combinedDelayDataStreamTS
 //                .keyBy(CombinedDelay::getState)
@@ -174,13 +205,13 @@ public class USFlightsApp {
 //            }
 //        });
 
-        DataStream<CombinedDelay> aggregatedDelayStream = combinedDelayDataStreamTS
-            .keyBy(CombinedDelay::getState) // !!!!!!!!! KeyBy messes up the watermarks, for some reason !!!
+//        DataStream<CombinedDelay> aggregatedDelayStream = combinedDelayDataStreamTS
+//            .keyBy(CombinedDelay::getState) // !!!!!!!!! KeyBy messes up the watermarks, for some reason !!!
 //            .window(new DelayWindowAssigner("A"))
-            .window(new DelayWindowAssigner("C"))
+//            .window(new DelayWindowAssigner("C"))
 //            .window(TumblingEventTimeWindows.of(Time.minutes(1)))
 //            .windowAll(SlidingEventTimeWindows.of(Time.minutes(1), Time.minutes(1)))
-            .aggregate(new CombinedDelay())
+//            .aggregate(new CombinedDelay())
 //            .map(a -> { System.out.println("AGG -> " + a + " with timestamp -> " + a.getUtcDate().getTime()); return a; })
 //            .assignTimestampsAndWatermarks(
 //                    new DelayWatermarkStrategy()
@@ -190,20 +221,20 @@ public class USFlightsApp {
 //            )
         ;
 
-        try {
-            CloseableIterator<CombinedDelay> combinedDelayCloseableIterator = aggregatedDelayStream.executeAndCollect();
-
-            System.out.println("has any results: " + combinedDelayCloseableIterator.hasNext());
-
-            combinedDelayCloseableIterator.forEachRemaining(System.out::println);
-
-
-        } catch (Exception e) {
-            System.out.println("AGG------------------");
-            throw new RuntimeException("AGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
-        }
-
-        aggregatedDelayStream.print();
+//        try {
+//            CloseableIterator<CombinedDelay> combinedDelayCloseableIterator = aggregatedDelayStream.executeAndCollect();
+//
+//            System.out.println("has any results: " + combinedDelayCloseableIterator.hasNext());
+//
+//            combinedDelayCloseableIterator.forEachRemaining(System.out::println);
+//
+//
+//        } catch (Exception e) {
+//            System.out.println("AGG------------------");
+//            throw new RuntimeException("AGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
+//        }
+//
+//        aggregatedDelayStream.print();
 
 
         env.execute("USFlightsApp");

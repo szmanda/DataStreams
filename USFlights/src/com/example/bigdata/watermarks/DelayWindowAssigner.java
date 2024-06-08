@@ -82,7 +82,7 @@ public class DelayWindowAssigner extends WindowAssigner<Object, TimeWindow> {
     private static class AfterWatermarkTrigger extends Trigger<Object, TimeWindow> {
         @Override
         public TriggerResult onElement(Object o, long l, TimeWindow timeWindow, TriggerContext ctx) throws Exception {
-            System.out.println("Current watermark: " + new Date(ctx.getCurrentWatermark()) + "Close time for this window:"+ new Date(timeWindow.maxTimestamp()));
+            System.out.println("Current watermark: " + new Date(ctx.getCurrentWatermark()) + " - Close time for this window:"+ new Date(timeWindow.maxTimestamp()));
             if(timeWindow.maxTimestamp() <= ctx.getCurrentWatermark()) {
                 System.out.println("Firing After Watermark trigger for window ending on: "+ timeWindow.maxTimestamp());
                 return TriggerResult.FIRE;
