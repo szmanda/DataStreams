@@ -106,8 +106,8 @@ public class USFlightsApp {
 //        flightsString.sinkTo(Connectors.getKafkaSink(properties));
 //        flightsString.print();
 
-//        Map<String, Airport> airportsMap = loadAirports(properties, env);
-        Map<String, Airport> airportsMap = new HashMap<>();
+        Map<String, Airport> airportsMap = loadAirports(properties, env);
+//        Map<String, Airport> airportsMap = new HashMap<>();
 //        DataStream<String> flightsString = env.fromSource(Connectors.getKafkaSource(properties),
 //                WatermarkStrategy.noWatermarks(), "KafkaInput");
 
@@ -150,15 +150,15 @@ public class USFlightsApp {
 //                                            }
 //                                        })
 //                );
-//        flights.print();
 
 
         DataStream<Flight> flights = env.fromSource(
                 Connectors.getKafkaSourceFlight(properties),
                 new FlightWatermarkStrategy(),
                 "FlightsKafkaInput").setParallelism(1);
-        // Without .setParallelism(1), watermarks are being messed up after keyBy()
+        // Note: without .setParallelism(1), watermarks are being messed up after keyBy()
 
+//        flights.print();
 
         FlightAggregate flightAggregate = new FlightAggregate();
         flightAggregate.setAirportsMap(airportsMap);
@@ -170,14 +170,14 @@ public class USFlightsApp {
                 .aggregate(flightAggregate)
                 ;
 
-        aggregated.process(new ProcessFunction<CombinedDelay, Object>() {
-            @Override
-            public void processElement(CombinedDelay combinedDelay, ProcessFunction<CombinedDelay, Object>.Context context, Collector<Object> collector) throws Exception {
-                System.out.println("aggregated_WM: " +new Date(context.timerService().currentWatermark()));
-            }
-        });
+//        aggregated.process(new ProcessFunction<CombinedDelay, Object>() {
+//            @Override
+//            public void processElement(CombinedDelay combinedDelay, ProcessFunction<CombinedDelay, Object>.Context context, Collector<Object> collector) throws Exception {
+//                System.out.println("aggregated_WM: " +new Date(context.timerService().currentWatermark()));
+//            }
+//        });
 
-        aggregated.print();
+//        aggregated.print();
 
 
 
