@@ -26,7 +26,6 @@ public class FlightAggregate implements AggregateFunction<Flight, CombinedDelay,
         }
 
         CombinedDelay combined = new CombinedDelay();
-//        combined.setAirport(flight.getCurrentAirport());
         combined.setDelay(flight.getTotalDelayInteger());
         combined.setInfoType(flight.getInfoType());
         combined.setState(airport.getState());

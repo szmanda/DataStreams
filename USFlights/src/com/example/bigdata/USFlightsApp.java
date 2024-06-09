@@ -79,6 +79,8 @@ public class USFlightsApp {
 
         Map<String, Airport> airportsMap = loadAirports(properties, env);
 
+        FlightWatermarkStrategy.MAX_DELAY = Integer.parseInt(properties.get("watermark.delay_ms", "86400000"));
+
         DataStream<Flight> inputStream = env.fromSource(
                 Connectors.getKafkaSourceFlight(properties),
                 new FlightWatermarkStrategy(),
@@ -107,7 +109,6 @@ public class USFlightsApp {
 
         DataStream<CombinedDelay> aggregated = flights
                 .keyBy(Flight::getState)
-//                .window(new DelayWindowAssigner("A"))
                 .window(new DelayWindowAssigner(properties.get("update.mode")))
                 .aggregate(flightAggregate)
                 ;

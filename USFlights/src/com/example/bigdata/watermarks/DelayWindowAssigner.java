@@ -98,7 +98,7 @@ public class DelayWindowAssigner extends WindowAssigner<Object, TimeWindow> {
 
         @Override
         public TriggerResult onEventTime(long l, TimeWindow timeWindow, Trigger.TriggerContext ctx) {
-            if (l >= timeWindow.maxTimestamp()) {
+            if (l + FlightWatermarkStrategy.MAX_DELAY >= timeWindow.maxTimestamp()) {
                 System.out.println("ON EVENT TIME: Closing window " + new Date(timeWindow.maxTimestamp()));
                 return TriggerResult.FIRE;
             } else {

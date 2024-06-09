@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class FlightWatermarkStrategy implements WatermarkStrategy<Flight> {
-    public static final long MAX_DELAY = 1000L*60*60*24; // 1 minute = 60000L
+    public static long MAX_DELAY = 1000L*60*60*24; // 1 minute = 60000L
     public long currentMaxTimestamp = 0L;
 
     @Override

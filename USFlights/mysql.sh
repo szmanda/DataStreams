@@ -12,4 +12,5 @@ docker exec -it mysql mysql -ustreamuser -pstream streamdb -e \
   , departure_count INT \
   , arrival_delay INT \
   , departure_delay INT \
+  , date VARCHAR(64) \
 );"

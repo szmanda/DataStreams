@@ -1,6 +1,6 @@
-## Kafka, Stream Processing - US Flights (flink)
+# Kafka, Stream Processing - US Flights (flink)
 
-
+link do pliku USFlights.jar: https://drive.google.com/drive/folders/1dISE_GEEgcqyNIERNW8AfaOGDVBk15QO?usp=sharing
 
 ```
 ┌─────────────────┐    ┌─────────────────┐
@@ -29,6 +29,110 @@
 │ DS<CombineDelay>├────► MySQL table     │
 └─────────────────┘    └─────────────────┘
 ```
+
+# Opis przetwarzania
+
+## Transformacje utrzymujące obraz czasu rzeczywistego
+
+Dane o lotach, z producenta Kafki, są ładowane do pierwszego DataStream. Napotkawszy błąd resetujących się watermarków, o którym utworzyłem wątek na forum (\[Flink\] Resetujące się watermarki?) byłem zmuszony zrezygnować z równoległości przetwarzania źródła. Na chwilę obecną nie znam przyczyny, więcej szczegółów we wspomnianym wątku. (na tę chwilę podejżewałbym moją klasę `FlightWatermarkStragety`, ale już brakuje czasu by szukać błędów)
+
+```java
+DataStream<Flight> inputStream = env.fromSource(
+  Connectors.getKafkaSourceFlight(properties),
+  new FlightWatermarkStrategy(),
+  "FlightsKafkaInput").setParallelism(1);
+```
+
+Wykorzystany watermark pozwala na przyjęcie zdarzeń opóźnionych o maksymalnie wartość parametru `watermark.delay_ms`
+
+Następnie dane są uzupełnione o dodatkowe informacje ze statycznego źródła `airports.csv`. Wykorzystałem do tego celu proste mapowanie (dodając dodatkowe atrybuty do klasy Flight):
+
+```java
+Airport airport = airportsMap.get(flight.getCurrentAirport());
+flight.setState(airport.getState());
+flight.setTimeZone(airport.getTimezone());
+```
+
+Strumień lotów jest następnie dzielony na podstawie przypisanych im stanów, oraz podzielony na okna za pomocą daty, a następnie agregowany:
+
+```java
+DataStream<CombinedDelay> aggregated = flights
+  .keyBy(Flight::getState)
+  .window(new DelayWindowAssigner(properties.get("update.mode")))
+  .aggregate(flightAggregate)
+  ;
+```
+
+Przydział do okien następuje niezależnie od trybu, zawsze na podstawie dnia. Okno otwiera się kaźdego dnia o północy, a zamyka zaraz przed kolejnym. To co róźni się dla trybu A i C to wykorzystane wyzwalacze:
+
+## Wyzwalacz dla trybu A
+
+Tryb A -- jak najszybciej zwracającego niekompletne dane, który je w razie potrzeby aktualizując, wymaga wywołania wyzwalacza na oknie, przy każdym nowym wydarzeniu należącym do tego okna. Dlatego jego metoda `onEvent()` zawsze zwraca `TriggerResult.FIRE`.
+
+
+## Wyzwalacz dla trybu C
+
+Tryb C -- jak najszybciej zwracający kompletne dane, wymaga wywołania wyzwalacza na oknie jedynie gdy zostanie ono przekroczone przez watermark, stąd jego metoda `onEventTime()` ma następujący kształt.
+
+```java
+if (timestamp + FlightWatermarkStrategy.MAX_DELAY >= timeWindow.maxTimestamp()) {
+  return TriggerResult.FIRE;
+} else {
+  return TriggerResult.CONTINUE;
+}
+```
+
+## Agregacja
+
+Agregacja przekształca `Flight` w obiekt `CombinedDelay` a następnie wykonuje merge polegający na dodaniu wszystkich agregowanych elementów parami: 
+
+```java
+if (flight.getInfoType().equals("A")) {
+    combined.setArrivalCount(1);
+    combined.setArrivalDelay(flight.getTotalDelayInteger());
+}
+if (flight.getInfoType().equals("D")) {
+    combined.setDepartureCount(1);
+    combined.setDepartureDelay(flight.getTotalDelayInteger());
+}
+```
+
+```java
+a.setDelay(a.getDelay() + b.getDelay());
+a.setArrivalDelay(a.getArrivalDelay() + b.getArrivalDelay());
+a.setDepartureDelay(a.getDepartureDelay() + b.getDepartureDelay());
+a.setArrivalCount(a.getArrivalCount() + b.getArrivalCount());
+a.setDepartureCount(a.getDepartureCount() + b.getDepartureCount());
+```
+
+## Zapisanie obrazu czasu rzeczywistego
+
+Obraz czasu rzeczywistego jest zapisany za pomocą dockerowego obrazu mysql. Tworzony jest użytkownik i baza danych -- te dane są potem parametryzowane wewnątrz `flink.parameters`, oraz wykorzystane przez aplikację do połączenia z bazą danych.
+
+Wszystkie operacje można zamknąć w poniższych poleceniach SQL
+
+```sql
+CREATE USER 'streamuser'@'%' IDENTIFIED BY 'stream';
+
+CREATE DATABASE IF NOT EXISTS streamdb CHARACTER SET utf8;
+
+GRANT ALL ON streamdb.* TO 'streamuser'@'%';
+
+CREATE TABLE delay_etl_image (
+    state VARCHAR(255)
+  , arrival_count INT
+  , departure_count INT
+  , arrival_delay INT
+  , departure_delay INT
+  , date VARCHAR(64)
+);
+
+INSERT INTO delay_etl_image (state, arrival_count, departure_count, arrival_delay, departure_delay, date) VALUES (?, ?, ?, ?, ?, ?)
+```
+
+### Dlaczego MySQL
+
+MySql jako popularna i sprawdzona platforma bazodanowa, z racji dojrzałości tego rozwiązania oferuje rozsądną wydajność i niezawodność, a także szeroki wachlarz wsparcia wśród różnych bibliotek w tym dla Flinka. Pozwala przechować dane w sposób bezpieczny na awarie, nawet w przypadku wystąpienia błędów w przetwarzaniu strumieniowym, dane wynikowe pozostaną bezpiecznie zapisane.
 
 # Uruchomienie
 
@@ -159,8 +263,51 @@ Displaying real time etl image
 sudo docker exec -it mysql mysql -ustreamuser -pstream streamdb -e "SELECT * from delay_etl_image order by date desc limit 20;"
 ```
 
-Removing mysql container
+Clearing results, Removing mysql container
 ```sh
+sudo docker exec -it mysql mysql -ustreamuser -pstream streamdb -e "delete from delay_etl_image;"
 sudo docker stop mysql
 sudo docker rm mysql
+```
+
+
+## Przykładowe z uzyskanych wyników
+
+Komentarz: Chyba obrałem błędną definicję obliczania czasu opóźnień, skoro dla odlotów wyszły mi same zera. Faktycznie jedynie sumowałem wartości przypisane przyczyn opóźnień (airSystemDelay, securityDelay, airlineDelay, lateAircraftDelay, weatherDelay). Ale też uważam to za mało istotny szczegół, który w zasadzie nie wpływa na kształt przetwarzania.
+
+`SELECT * from delay_etl_image where state = 'CA' order by date desc limit 50;` (w trakcie przetwarzania)
+```
++-------+---------------+-----------------+---------------+-----------------+------------+
+| state | arrival_count | departure_count | arrival_delay | departure_delay | date       |
++-------+---------------+-----------------+---------------+-----------------+------------+
+| CA    |          2024 |            2031 |         12685 |               0 | 2015-09-02 |
+| CA    |          2031 |            2013 |          7623 |               0 | 2015-09-01 |
+| CA    |          2099 |            2080 |         12491 |               0 | 2015-08-31 |
+| CA    |          1888 |            1950 |         11160 |               0 | 2015-08-30 |
+| CA    |          1713 |            1672 |         13798 |               0 | 2015-08-29 |
+| CA    |          2109 |            2090 |          8159 |               0 | 2015-08-28 |
+| CA    |          2076 |            2088 |         13269 |               0 | 2015-08-27 |
+| CA    |          2048 |            2054 |         13242 |               0 | 2015-08-26 |
+| CA    |          2014 |            2010 |         17327 |               0 | 2015-08-25 |
+| CA    |          2065 |            2056 |         15091 |               0 | 2015-08-24 |
+```
+
+`SELECT * from delay_etl_image order by date desc limit 50;` (po zakończeniu)
+```
++-------+---------------+-----------------+---------------+-----------------+------------+
+| state | arrival_count | departure_count | arrival_delay | departure_delay | date       |
++-------+---------------+-----------------+---------------+-----------------+------------+
+| AK    |            75 |              78 |           633 |               0 | 2015-12-30 |
+| MT    |            49 |              49 |          1030 |               0 | 2015-12-30 |
+| ME    |            16 |              16 |           499 |               0 | 2015-12-30 |
+| MI    |           368 |             372 |          9465 |               0 | 2015-12-30 |
+| KY    |            98 |              97 |          3514 |               0 | 2015-12-30 |
+| NC    |           424 |             428 |         17939 |               0 | 2015-12-30 |
+| NE    |            62 |              62 |          2445 |               0 | 2015-12-30 |
+| GA    |          1009 |            1030 |         61235 |               0 | 2015-12-30 |
+| IL    |          1131 |            1102 |         50866 |               0 | 2015-12-30 |
+| SC    |            76 |              77 |          2639 |               0 | 2015-12-30 |
+| RI    |            35 |              35 |          1278 |               0 | 2015-12-30 |
+| ID    |            60 |              60 |           591 |               0 | 2015-12-30 |
+| ND    |            50 |              50 |           918 |               0 | 2015-12-30 |
 ```
