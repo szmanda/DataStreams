@@ -6,8 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> {
-    private static final long MAX_DELAY = 1000L*60*60*24; // 1 minute = 60000L
-    private long currentMaxTimestamp = 0L;
+    public static final long MAX_DELAY = 1000L*60*60*24; // 1 minute = 60000L
+    public long currentMaxTimestamp = 0L;
 
     @Override
     public TimestampAssigner<CombinedDelay> createTimestampAssigner(TimestampAssignerSupplier.Context context) {
@@ -30,7 +30,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
     }
 
 
-    private class MyTimestampAssigner implements TimestampAssigner<CombinedDelay> {
+    public static class MyTimestampAssigner implements TimestampAssigner<CombinedDelay> {
         @Override
         public long extractTimestamp(CombinedDelay delay, long previousElementTimestamp) {
             try
@@ -48,11 +48,14 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
         }
     }
 
-    private class MyWatermarkGenerator implements WatermarkGenerator<CombinedDelay> {
+    public class MyWatermarkGenerator implements WatermarkGenerator<CombinedDelay> {
         @Override
         public void onEvent(CombinedDelay delay, long eventTimestamp, WatermarkOutput output) {
 //            System.out.println(delay.getUtcDate() +" <?> "+ new Date(currentMaxTimestamp));
-            if (delay.getUtcDate().getTime() < currentMaxTimestamp) return;
+            if (delay.getUtcDate().getTime() < currentMaxTimestamp && currentMaxTimestamp > 1000L) {
+                new Watermark(currentMaxTimestamp);
+                return;
+            }
             currentMaxTimestamp = delay.getUtcDate().getTime();
 
             Date date = new Date(currentMaxTimestamp);
@@ -61,7 +64,7 @@ public class DelayWatermarkStrategy implements WatermarkStrategy<CombinedDelay> 
             date.setSeconds(0);
             long start = date.getTime();
             long size = 1000L*60*60*24;
-            System.out.println("Emmiting a watermark: "+new Date(currentMaxTimestamp)+ ", inside a window: "+ new Date(start) +" -- "+ new Date(start+size));
+//            System.out.println("Emmiting a watermark: "+new Date(currentMaxTimestamp)+ ", inside a window: "+ new Date(start) +" -- "+ new Date(start+size));
             output.emitWatermark(new Watermark(currentMaxTimestamp));
         }
 

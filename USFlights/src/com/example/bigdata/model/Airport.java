@@ -19,7 +19,7 @@ public class Airport implements Serializable {
     private String state;
 
     public Airport() {
-        this(-1, "", "", "", "", "", 0.0, 0.0, -1, "", "", "", "", "");
+        this(-1, "", "", "", "___", "", 0.0, 0.0, -1, "0", "", "", "", "");
     }
 
     public Airport(Integer airportId, String name, String city, String country, String IATA, String ICAO, Double latitude, Double longitude, Integer altitude, String timezone, String DST, String timezoneName, String type, String state) {

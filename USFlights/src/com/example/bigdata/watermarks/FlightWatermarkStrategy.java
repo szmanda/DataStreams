@@ -1,6 +1,5 @@
 package com.example.bigdata.watermarks;
 
-import com.example.bigdata.model.CombinedDelay;
 import com.example.bigdata.model.Flight;
 import org.apache.flink.api.common.eventtime.*;
 import java.text.SimpleDateFormat;

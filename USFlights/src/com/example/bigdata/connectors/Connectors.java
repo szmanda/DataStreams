@@ -1,6 +1,8 @@
 package com.example.bigdata.connectors;
 
 //import com.example.bigdata.model.SensorDataAgg;
+import com.example.bigdata.model.Flight;
+import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.base.DeliveryGuarantee;
@@ -19,6 +21,7 @@ import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -42,6 +45,23 @@ public class Connectors {
                 .setGroupId("my-group")
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
+                .build();
+    }
+
+    public static KafkaSource<Flight> getKafkaSourceFlight(ParameterTool properties) {
+        return  KafkaSource.<Flight>builder()
+                .setBootstrapServers(properties.getRequired("kafka.bootstrap"))
+                .setTopics(properties.getRequired("kafka.topic"))
+                .setGroupId("my-group")
+                .setStartingOffsets(OffsetsInitializer.earliest())
+                .setValueOnlyDeserializer(new AbstractDeserializationSchema<Flight>() {
+                    private final SimpleStringSchema stringDeser = new SimpleStringSchema();
+                    @Override
+                    public Flight deserialize(byte[] bytes) throws IOException {
+                        String csvLine = stringDeser.deserialize(bytes);
+                        return Flight.parseFromCsvLine(csvLine);
+                    }
+                })
                 .build();
     }
 

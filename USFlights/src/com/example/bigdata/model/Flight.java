@@ -38,6 +38,10 @@ public class Flight implements Serializable {
     private String orderColumn;
     private String infoType;
 
+    private String state;
+
+    private String timeZone;
+
     private String currentAirport;
 
     public Integer get0() {
@@ -364,6 +368,22 @@ public class Flight implements Serializable {
 
     public void setCurrentAirport(String currentAirport) {
         this.currentAirport = currentAirport;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 
     public String getRealEventTime() {
