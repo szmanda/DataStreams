@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -93,7 +94,7 @@ public class Connectors {
 
     public static SinkFunction<CombinedDelay> getMySQLSink(ParameterTool properties) {
         return JdbcSink.sink(
-            "INSERT INTO delay_etl_image (state, arrival_count, departure_count, arrival_delay, departure_delay) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO delay_etl_image (state, arrival_count, departure_count, arrival_delay, departure_delay, date) VALUES (?, ?, ?, ?, ?, ?)",
             new JdbcStatementBuilder<CombinedDelay>() {
                 @Override
                 public void accept(PreparedStatement ps, CombinedDelay delay) throws SQLException {
@@ -102,6 +103,8 @@ public class Connectors {
                     ps.setInt(3, delay.getDepartureCount());
                     ps.setInt(4, delay.getArrivalDelay());
                     ps.setInt(5, delay.getDepartureDelay());
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    ps.setString(6, dateFormat.format(delay.getDate()));
                 }
             },
             JdbcExecutionOptions.builder()

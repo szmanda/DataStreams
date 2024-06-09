@@ -416,4 +416,9 @@ public class Flight implements Serializable {
         calendar.add(Calendar.HOUR_OF_DAY, - Integer.parseInt(timeZone));
         return calendar.getTime();
     }
+
+    public String getStateDate() {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return getState() + ":" + simpleDateFormat.format(getOrderColumnDate());
+    }
 }

@@ -53,7 +53,7 @@ public class FlightAggregate implements AggregateFunction<Flight, CombinedDelay,
         a.setArrivalDelay(a.getArrivalDelay() + b.getArrivalDelay());
         a.setDepartureDelay(a.getDepartureDelay() + b.getDepartureDelay());
         a.setArrivalCount(a.getArrivalCount() + b.getArrivalCount());
-        a.setDepartureCount(a.getDepartureCount() + a.getDepartureCount());
+        a.setDepartureCount(a.getDepartureCount() + b.getDepartureCount());
         return a;
     }
 }

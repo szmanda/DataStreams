@@ -102,7 +102,6 @@ public class USFlightsApp {
                     }
                 });
 
-
         FlightAggregate flightAggregate = new FlightAggregate();
         flightAggregate.setAirportsMap(airportsMap);
 
@@ -113,7 +112,9 @@ public class USFlightsApp {
                 .aggregate(flightAggregate)
                 ;
 
-        aggregated.addSink(Connectors.getMySQLSink(properties));
+        if (!properties.get("mysql.disableSink", "false").equals("true")) {
+            aggregated.addSink(Connectors.getMySQLSink(properties));
+        }
         aggregated.print();
 
         env.execute("USFlightsApp");
