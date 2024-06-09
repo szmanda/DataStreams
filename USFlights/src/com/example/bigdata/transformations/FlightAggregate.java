@@ -32,6 +32,14 @@ public class FlightAggregate implements AggregateFunction<Flight, CombinedDelay,
         combined.setState(airport.getState());
         combined.setDate(flight.getOrderColumnDate());
         combined.setTimeZone(Integer.parseInt(airport.getTimezone()));
+        if (flight.getInfoType().equals("A")) {
+            combined.setArrivalCount(1);
+            combined.setArrivalDelay(flight.getTotalDelayInteger());
+        }
+        if (flight.getInfoType().equals("D")) {
+            combined.setDepartureCount(1);
+            combined.setDepartureDelay(flight.getTotalDelayInteger());
+        }
 
         return merge(combined, agg);
     }
@@ -42,6 +50,10 @@ public class FlightAggregate implements AggregateFunction<Flight, CombinedDelay,
         if (b == null) b = new CombinedDelay();
 //        System.out.println("merging: "+a.toString()+"with: "+b.toString()+"\n");
         a.setDelay(a.getDelay() + b.getDelay());
+        a.setArrivalDelay(a.getArrivalDelay() + b.getArrivalDelay());
+        a.setDepartureDelay(a.getDepartureDelay() + b.getDepartureDelay());
+        a.setArrivalCount(a.getArrivalCount() + b.getArrivalCount());
+        a.setDepartureCount(a.getDepartureCount() + a.getDepartureCount());
         return a;
     }
 }

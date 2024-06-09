@@ -15,18 +15,24 @@ public class CombinedDelay implements Serializable {
     private String state;
     private Date date;
 
+    private Integer departureCount = 0;
+    private Integer arrivalCount = 0;
+    private Integer departureDelay = 0;
+    private Integer arrivalDelay = 0;
+
     private Integer timeZone;
 
     @Override
     public String toString() {
         return "CombinedDelay{" +
-                "delay='" + delay.toString() + '\'' +
-                ", infoType='" + infoType + '\'' +
-//                ", airport='" + airport + '\'' +
-                ", state='" + state + '\'' +
+                "state='" + state + '\'' +
                 ", date='"+ date + "'" +
                 ", timezone='"+ timeZone +"'"+
                 ", utcDate='"+ getUtcDate() +"'" +
+                ", departureCount=" + departureCount +
+                ", arrivalCount=" + arrivalCount +
+                ", departureDelay=" + departureDelay +
+                ", arrivalDelay=" + arrivalDelay +
                 '}';
     }
 
@@ -76,6 +82,38 @@ public class CombinedDelay implements Serializable {
 
     public void setTimeZone(Integer timeZone) {
         this.timeZone = timeZone;
+    }
+
+    public Integer getDepartureCount() {
+        return departureCount;
+    }
+
+    public void setDepartureCount(Integer departureCount) {
+        this.departureCount = departureCount;
+    }
+
+    public Integer getArrivalCount() {
+        return arrivalCount;
+    }
+
+    public void setArrivalCount(Integer arrivalCount) {
+        this.arrivalCount = arrivalCount;
+    }
+
+    public Integer getDepartureDelay() {
+        return departureDelay;
+    }
+
+    public void setDepartureDelay(Integer departureDelay) {
+        this.departureDelay = departureDelay;
+    }
+
+    public Integer getArrivalDelay() {
+        return arrivalDelay;
+    }
+
+    public void setArrivalDelay(Integer arrivalDelay) {
+        this.arrivalDelay = arrivalDelay;
     }
 
     public Date getUtcDate() {

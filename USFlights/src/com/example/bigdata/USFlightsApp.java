@@ -72,7 +72,6 @@ public class USFlightsApp {
 
         process(properties, env);
 
-
         System.exit(0);
     }
 
@@ -114,6 +113,7 @@ public class USFlightsApp {
                 .aggregate(flightAggregate)
                 ;
 
+        aggregated.addSink(Connectors.getMySQLSink(properties));
         aggregated.print();
 
         env.execute("USFlightsApp");

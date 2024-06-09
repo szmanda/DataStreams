@@ -5,6 +5,7 @@ import org.apache.flink.api.common.time.Time;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -403,5 +404,16 @@ public class Flight implements Serializable {
             new RuntimeException("Cannot assign date of flight: "+toString());
         }
         return date;
+    }
+
+    public Date getUtcDate() {
+        if (orderColumn == null) return null;
+
+//        System.out.println(date);
+//        System.out.println(timeZone);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(getOrderColumnDate());
+        calendar.add(Calendar.HOUR_OF_DAY, - Integer.parseInt(timeZone));
+        return calendar.getTime();
     }
 }

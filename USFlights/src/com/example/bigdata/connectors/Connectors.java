@@ -1,6 +1,7 @@
 package com.example.bigdata.connectors;
 
 //import com.example.bigdata.model.SensorDataAgg;
+import com.example.bigdata.model.CombinedDelay;
 import com.example.bigdata.model.Flight;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
@@ -88,6 +89,33 @@ public class Connectors {
                         .setValueSerializationSchema(new SimpleStringSchema())
                         .build())
                 .build();
+    }
+
+    public static SinkFunction<CombinedDelay> getMySQLSink(ParameterTool properties) {
+        return JdbcSink.sink(
+            "INSERT INTO delay_etl_image (state, arrival_count, departure_count, arrival_delay, departure_delay) VALUES (?, ?, ?, ?, ?)",
+            new JdbcStatementBuilder<CombinedDelay>() {
+                @Override
+                public void accept(PreparedStatement ps, CombinedDelay delay) throws SQLException {
+                    ps.setString(1, delay.getState());
+                    ps.setInt(2, delay.getArrivalCount());
+                    ps.setInt(3, delay.getDepartureCount());
+                    ps.setInt(4, delay.getArrivalDelay());
+                    ps.setInt(5, delay.getDepartureDelay());
+                }
+            },
+            JdbcExecutionOptions.builder()
+                .withBatchSize(100)
+                .withBatchIntervalMs(200)
+                .withMaxRetries(5)
+                .build(),
+            new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
+                .withUrl(properties.getRequired("mysql.url"))
+                .withDriverName("com.mysql.jdbc.Driver")
+                .withUsername(properties.getRequired("mysql.username"))
+                .withPassword(properties.getRequired("mysql.password"))
+                .build()
+        );
     }
 
 //    public static SinkFunction<String> getKafkaSink(ParameterTool properties) {
