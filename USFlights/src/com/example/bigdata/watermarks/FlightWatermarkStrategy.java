@@ -53,7 +53,7 @@ public class FlightWatermarkStrategy implements WatermarkStrategy<Flight> {
         public void onEvent(Flight flight, long eventTimestamp, WatermarkOutput output) {
 //            System.out.println(delay.getUtcDate() +" <?> "+ new Date(currentMaxTimestamp));
             if (flight.getOrderColumnDate().getTime() < currentMaxTimestamp && currentMaxTimestamp > 1000L) {
-                new Watermark(currentMaxTimestamp);
+                new Watermark(currentMaxTimestamp - MAX_DELAY);
                 return;
             }
             currentMaxTimestamp = flight.getOrderColumnDate().getTime();
@@ -65,7 +65,7 @@ public class FlightWatermarkStrategy implements WatermarkStrategy<Flight> {
             long start = date.getTime();
             long size = 1000L*60*60*24;
 //            System.out.println("Emmiting a watermark: "+new Date(currentMaxTimestamp)+ ", inside a window: "+ new Date(start) +" -- "+ new Date(start+size));
-            output.emitWatermark(new Watermark(currentMaxTimestamp));
+            output.emitWatermark(new Watermark(currentMaxTimestamp - MAX_DELAY));
         }
 
         @Override
